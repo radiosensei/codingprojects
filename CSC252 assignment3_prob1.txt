@@ -4,6 +4,7 @@
 #include <memory>
 #include <sstream>
 #include <iomanip>
+#include <limits>
 using namespace std;
 
 // ---------------------- Date Class ----------------------
@@ -22,6 +23,24 @@ public:
     }
 };
 
+// ---------------------- Date Validation ----------------------
+bool is_leap_year(int year) {
+    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+}
+
+bool is_valid_date(int year, int month, int day) {
+    if (year < 1000 || month < 1 || month > 12 || day < 1)
+        return false;
+
+    int days_in_month[] = { 31, 28, 31, 30, 31, 30,
+                            31, 31, 30, 31, 30, 31 };
+
+    if (month == 2 && is_leap_year(year))
+        return day <= 29;
+
+    return day <= days_in_month[month - 1];
+}
+
 // ------------------ Appointment Base Class ------------------
 class Appointment {
 protected:
@@ -31,7 +50,6 @@ protected:
 public:
     Appointment(string desc, Date d) : description(desc), date(d) {}
 
-    // PURE VIRTUAL FUNCTION
     virtual bool occurs_on(int year, int month, int day) const = 0;
 
     virtual string ToString() const {
@@ -61,6 +79,34 @@ public:
     }
 };
 
+// ---------------------- Get Validated Date Input ----------------------
+bool get_valid_date_input(int& year, int& month, int& day) {
+    string input;
+    while (true) {
+        cout << "Enter a date (YYYY MM DD) with spaces: ";
+        getline(cin, input);
+        stringstream ss(input);
+
+        if (!(ss >> year >> month >> day)) {
+            cout << "❌ Wrong input format. Please use: YYYY MM DD (e.g., 2025 07 10)\n";
+            continue;
+        }
+
+        string extra;
+        if (ss >> extra) {
+            cout << "❌ Too many values. Only enter 3 numbers.\n";
+            continue;
+        }
+
+        if (!is_valid_date(year, month, day)) {
+            cout << "❌ Invalid calendar date. Try again.\n";
+            continue;
+        }
+
+        return true;
+    }
+}
+
 // ------------------------- Main Function -------------------------
 int main() {
     vector<shared_ptr<Appointment>> appointments;
@@ -71,15 +117,14 @@ int main() {
     appointments.push_back(make_shared<Day>("Project deadline", Date(2025, 7, 20)));
     appointments.push_back(make_shared<Monthly>("Team sync meeting", Date(2025, 1, 10)));
 
-    // User input
+    // Get validated input
     int y, m, d;
-    cout << "Enter a date to check appointments (YYYY MM DD): ";
-    cin >> y >> m >> d;
+    get_valid_date_input(y, m, d);
 
-    cout << "\nAppointments on " 
+    // Show matching appointments
+    cout << "\nAppointments on "
          << setfill('0') << setw(4) << y << "-"
-         << setw(2) << m << "-" 
-         << setw(2) << d << ":\n";
+         << setw(2) << m << "-" << setw(2) << d << ":\n";
 
     bool found = false;
     for (const auto& appt : appointments) {
