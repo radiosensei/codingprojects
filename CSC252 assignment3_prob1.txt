@@ -1,0 +1,97 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <memory>
+#include <sstream>
+#include <iomanip>
+using namespace std;
+
+// ---------------------- Date Class ----------------------
+class Date {
+public:
+    int year, month, day;
+
+    Date(int y, int m, int d) : year(y), month(m), day(d) {}
+
+    string ToString() const {
+        ostringstream oss;
+        oss << setfill('0') << setw(4) << year << "-"
+            << setw(2) << month << "-"
+            << setw(2) << day;
+        return oss.str();
+    }
+};
+
+// ------------------ Appointment Base Class ------------------
+class Appointment {
+protected:
+    string description;
+    Date date;
+
+public:
+    Appointment(string desc, Date d) : description(desc), date(d) {}
+
+    // PURE VIRTUAL FUNCTION
+    virtual bool occurs_on(int year, int month, int day) const = 0;
+
+    virtual string ToString() const {
+        return description + " on " + date.ToString();
+    }
+
+    virtual ~Appointment() = default;
+};
+
+// ------------------ Day Appointment Class ------------------
+class Day : public Appointment {
+public:
+    Day(string desc, Date d) : Appointment(desc, d) {}
+
+    bool occurs_on(int year, int month, int day) const override {
+        return date.year == year && date.month == month && date.day == day;
+    }
+};
+
+// ------------------ Monthly Appointment Class ------------------
+class Monthly : public Appointment {
+public:
+    Monthly(string desc, Date d) : Appointment(desc, d) {}
+
+    bool occurs_on(int year, int month, int day) const override {
+        return date.year == year && date.day == day;
+    }
+};
+
+// ------------------------- Main Function -------------------------
+int main() {
+    vector<shared_ptr<Appointment>> appointments;
+
+    // Create mixed appointments
+    appointments.push_back(make_shared<Day>("Doctor visit", Date(2025, 7, 10)));
+    appointments.push_back(make_shared<Monthly>("Credit card payment", Date(2025, 1, 15)));
+    appointments.push_back(make_shared<Day>("Project deadline", Date(2025, 7, 20)));
+    appointments.push_back(make_shared<Monthly>("Team sync meeting", Date(2025, 1, 10)));
+
+    // User input
+    int y, m, d;
+    cout << "Enter a date to check appointments (YYYY MM DD): ";
+    cin >> y >> m >> d;
+
+    cout << "\nAppointments on " 
+         << setfill('0') << setw(4) << y << "-"
+         << setw(2) << m << "-" 
+         << setw(2) << d << ":\n";
+
+    bool found = false;
+    for (const auto& appt : appointments) {
+        if (appt->occurs_on(y, m, d)) {
+            cout << "- " << appt->ToString() << endl;
+            found = true;
+        }
+    }
+
+    if (!found) {
+        cout << "No appointments found on that date.\n";
+    }
+
+    return 0;
+}
